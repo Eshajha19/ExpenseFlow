@@ -1,15 +1,16 @@
-const Expense = require('../models/Expense');
+const expenseRepository = require('../repositories/expenseRepository');
+const userRepository = require('../repositories/userRepository');
 const Policy = require('../models/Policy');
 const ruleEngine = require('./ruleEngine');
-const User = require('../models/User');
 const currencyService = require('./currencyService');
 const budgetService = require('./budgetService');
 const approvalService = require('./approvalService');
 const intelligenceService = require('./intelligenceService');
+const mongoose = require('mongoose');
 
 class ExpenseService {
     async createExpense(rawData, userId, io) {
-        const user = await User.findById(userId);
+        const user = await userRepository.findById(userId);
 
         // 1. Process rules (Triggers & Actions)
         const { modifiedData, appliedRules } = await ruleEngine.processTransaction(rawData, userId);
@@ -42,13 +43,7 @@ class ExpenseService {
             }
         }
 
-        // 4. Save Expense
-        const expense = new Expense(finalData);
-        await expense.save();
-
-        // 5. Handle Approvals
-        if (finalData.workspace) {
-        // 4. Check governance policies
+        // 4. Handle Governance Policies (Workspace only)
         if (finalData.workspace) {
             const policies = await Policy.find({
                 workspaceId: finalData.workspace,
@@ -99,17 +94,19 @@ class ExpenseService {
         }
 
         // 5. Save Expense
-        const expense = new Expense(finalData);
-        await expense.save();
+        const expense = await expenseRepository.create(finalData);
 
-        // 6. Handle Approvals (fallback for non-workspace expenses)
+        // 6. Handle Approvals (fallback for non-policy workspace expenses)
         if (finalData.workspace && !finalData.requiresApproval) {
             const requiresApproval = await approvalService.requiresApproval(finalData, finalData.workspace);
             if (requiresApproval) {
                 const workflow = await approvalService.submitForApproval(expense._id, userId);
+                await expenseRepository.updateById(expense._id, {
+                    approvalStatus: 'pending_approval',
+                    approvalWorkflow: workflow._id
+                });
                 expense.approvalStatus = 'pending_approval';
                 expense.approvalWorkflow = workflow._id;
-                await expense.save();
             }
         }
 
@@ -120,15 +117,14 @@ class ExpenseService {
         }
         await budgetService.updateGoalProgress(userId, finalData.type === 'expense' ? -amountForBudget : amountForBudget, finalData.category);
 
-        // 7. Trigger Intelligence Analysis (async, non-blocking)
+        // 8. Trigger Intelligence Analysis (async, non-blocking)
         setImmediate(async () => {
             try {
                 const burnRate = await intelligenceService.calculateBurnRate(userId, {
                     categoryId: finalData.category,
                     workspaceId: finalData.workspace
                 });
-                
-                // Emit burn rate update to client
+
                 if (io && burnRate.trend === 'increasing' && burnRate.trendPercentage > 15) {
                     io.to(`user_${userId}`).emit('burn_rate_alert', {
                         type: 'warning',
@@ -143,13 +139,12 @@ class ExpenseService {
             }
         });
 
-        // 8. Trigger Wellness Score Recalculation (async, non-blocking) - Issue #481
+        // 9. Trigger Wellness Score Recalculation (async, non-blocking)
         setImmediate(async () => {
             try {
                 const wellnessService = require('./wellnessService');
                 const healthScore = await wellnessService.calculateHealthScore(userId, { timeWindow: 30 });
-                
-                // Emit health score update to client if score changed significantly
+
                 if (io && healthScore.previousScore) {
                     const scoreDiff = Math.abs(healthScore.score - healthScore.previousScore);
                     if (scoreDiff >= 5) {
@@ -166,9 +161,9 @@ class ExpenseService {
             }
         });
 
-        // 9. Emit WebSocket
+        // 10. Emit WebSocket
         if (io) {
-            const socketData = expense.toObject();
+            const socketData = expense.toObject ? expense.toObject() : expense;
             socketData.displayAmount = finalData.convertedAmount || expense.amount;
             socketData.displayCurrency = finalData.convertedCurrency || expenseCurrency;
             io.to(`user_${userId}`).emit('expense_created', socketData);
@@ -181,10 +176,10 @@ class ExpenseService {
      * Get expenses by approval status
      */
     async getExpensesByStatus(workspaceId, status) {
-        return await Expense.find({
+        return await expenseRepository.findAll({
             workspace: workspaceId,
             approvalStatus: status
-        }).populate('createdBy', 'name email');
+        }, { populate: { path: 'createdBy', select: 'name email' } });
     }
 }
 
