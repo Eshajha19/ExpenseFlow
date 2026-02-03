@@ -53,7 +53,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com","https://api.github.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://api.github.com"],
       scriptSrc: [
         "'self'",
         "'unsafe-inline'",
@@ -62,7 +62,7 @@ app.use(helmet({
         "https://api.github.com"
       ],
       scriptSrcAttr: ["'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:", "https://res.cloudinary.com","https://api.github.com"],
+      imgSrc: ["'self'", "data:", "https:", "https://res.cloudinary.com", "https://api.github.com"],
       connectSrc: [
         "'self'",
         "http://localhost:3000",
@@ -189,7 +189,7 @@ io.on('connection', (socket) => {
   socket.on('settlement_action', async (data) => {
     try {
       const { action, settlementId, groupId, paymentDetails, reason } = data;
-      
+
       switch (action) {
         case 'request':
           await settlementService.requestSettlement(settlementId, socket.userId, paymentDetails);
@@ -244,6 +244,7 @@ app.use('/api/groups', require('./routes/groups'));
 app.use('/api/splits', require('./routes/splits'));
 app.use('/api/workspaces', require('./routes/workspaces'));
 app.use('/api/tax', require('./routes/tax'));
+app.use('/api/forecast', require('./routes/forecast'));
 
 app.use('/api/accounts', require('./routes/accounts'));
 
