@@ -1,5 +1,5 @@
-  <script src="auth-check.js"></script>
-  <script src="auth.js"></script>
+<script src="auth-check.js"></script>
+<script src="auth.js"></script>
 <!DOCTYPE html>
 <html lang="en" favicon="favicon.ico">
 
@@ -23,10 +23,12 @@
   <meta name="msapplication-TileColor" content="#0f0f23">
   <meta name="msapplication-navbutton-color" content="#64ffda">
   <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="css/folders.css">
 
   <!-- Manifest -->
   <link rel="manifest" href="manifest.json">
 </head>
+
 <body>
   <!-- Header -->
   <header class="header">
@@ -41,6 +43,8 @@
           <a href="accounts.html" class="nav-link">Accounts</a>
           <a href="analytics.html" class="nav-link">Analytics</a>
           <a href="goals.html" class="nav-link">Goals</a>
+          <a href="#" onclick="showSection('folders'); if(window.fetchFolders) window.fetchFolders(); return false;"
+            class="nav-link">Folders</a>
           <a href="settings.html" class="nav-link">Settings</a>
           <a href="Monthlysummary.html" class="nav-link">Monthly/Yearly Summary</a>
           <a href="./contributor.html" class="nav-link">Contributors</a>
@@ -71,7 +75,7 @@
       </div>
     </nav>
   </header>
-  
+
 
 
   <!-- Main Content -->
@@ -770,6 +774,7 @@
         <!-- Workspace Settings Tab -->
         <div class="settings-tabs">
           <button class="settings-tab active" onclick="switchSettingsTab('workspace')">Workspace</button>
+          <button class="settings-tab" onclick="switchSettingsTab('folders')">Folders</button>
           <button class="settings-tab" onclick="switchSettingsTab('approvals')">Approvals</button>
           <button class="settings-tab" onclick="switchSettingsTab('profile')">Profile</button>
         </div>
@@ -857,6 +862,37 @@
                 <i class="fas fa-save"></i> Update Profile
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    </section>
+
+    <!-- Folders Section -->
+    <section id="folders" class="folders-section" style="display: none;">
+      <div class="section-header">
+        <h3><i class="fas fa-folder"></i> Smart Folders</h3>
+        <button class="btn-primary" onclick="openCreateFolderModal()">
+          <i class="fas fa-plus"></i> New Folder
+        </button>
+      </div>
+
+      <div class="folders-layout">
+        <!-- Sidebar/Grid of Folders -->
+        <div class="folders-sidebar">
+          <h4 id="current-folder-title">All Folders</h4>
+          <div id="folders-grid" class="folders-grid">
+            <!-- Folders rendered here -->
+          </div>
+        </div>
+
+        <!-- Receipts List in Selected Folder -->
+        <div class="folder-content">
+          <div class="content-header">
+            <h4>Receipts</h4>
+          </div>
+          <div id="folder-receipts-list" class="folder-receipts-list">
+            <div class="empty-placeholder">Select a folder to view receipts</div>
           </div>
         </div>
       </div>
@@ -991,72 +1027,72 @@
       </div>
     </div>
   </div>
-<!-- < !--FOOTER -->
-<footer class="footer">
-        <div class="footer-container">
-            <div class="footer-section">
-                <div class="footer-logo">
-                    <i class="fas fa-wallet"></i>
-                    <span>ExpenseFlow</span>
-                </div>
-
-                <p class="footer-description">
-                    Smart money management made simple. Track, analyze, and optimize
-                    your financial habits.
-                </p>
-
-                <div class="social-links">
-                    <a href="https://x.com/9504_renu" class="social-link" target="_blank" rel="noopener noreferrer"
-                        aria-label="X (Twitter)">
-                        <i class="fab fa-x-twitter"></i>
-                    </a>
-
-                    <a href="https://github.com/Renu-code123/ExpenseFlow" class="social-link" target="_blank"
-                        rel="noopener noreferrer" aria-label="Github">
-                        <i class="fab fa-github"></i>
-                    </a>
-
-                    <a href="mailto:renu89857@gmail.com" class="social-link" target="_blank" rel="noopener noreferrer"
-                        aria-label="Email">
-                        <i class="far fa-envelope"></i>
-                    </a>
-
-                    <a href="https://www.linkedin.com/in/renu-kumari-prajapati" class="social-link" target="_blank"
-                        rel="noopener noreferrer" aria-label="LinkedIn">
-                        <i class="fab fa-linkedin-in"></i>
-                    </a>
-                </div>
-            </div>
-
-            <div class="footer-section">
-                <h4>Company</h4>
-                <ul class="footer-links">
-                    <li><a href="AboutUs.html">About Us</a></li>
-                    <li><a href="#">Privacy Policy</a></li>
-                    <li><a href="#">Terms of Service</a></li>
-                    <li><a href="#">Help Center</a></li>
-                    <li><a href="#">Contact</a></li>
-                </ul>
-            </div>
+  <!-- < !--FOOTER -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <div class="footer-logo">
+          <i class="fas fa-wallet"></i>
+          <span>ExpenseFlow</span>
         </div>
 
-        <div class="footer-bottom">
-            <div class="footer-container">
-                  <p id="copyright" style="text-align:center;"></p>
-                  <script>
-                    document.getElementById("copyright").innerHTML =
-                      `&copy; ${new Date().getFullYear()} Expense Flow . All rights reserved.`;
-                  </script>
-                <div class="footer-stats">
-                    <span>🏆 Trusted by 10,000+ users</span>
-                    <span>💰 ₹50M+ tracked</span>
-                    <span>📊 99.9% uptime</span>
-                </div>
-            </div>
-        </div>
-    </footer>
+        <p class="footer-description">
+          Smart money management made simple. Track, analyze, and optimize
+          your financial habits.
+        </p>
 
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+        <div class="social-links">
+          <a href="https://x.com/9504_renu" class="social-link" target="_blank" rel="noopener noreferrer"
+            aria-label="X (Twitter)">
+            <i class="fab fa-x-twitter"></i>
+          </a>
+
+          <a href="https://github.com/Renu-code123/ExpenseFlow" class="social-link" target="_blank"
+            rel="noopener noreferrer" aria-label="Github">
+            <i class="fab fa-github"></i>
+          </a>
+
+          <a href="mailto:renu89857@gmail.com" class="social-link" target="_blank" rel="noopener noreferrer"
+            aria-label="Email">
+            <i class="far fa-envelope"></i>
+          </a>
+
+          <a href="https://www.linkedin.com/in/renu-kumari-prajapati" class="social-link" target="_blank"
+            rel="noopener noreferrer" aria-label="LinkedIn">
+            <i class="fab fa-linkedin-in"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="footer-section">
+        <h4>Company</h4>
+        <ul class="footer-links">
+          <li><a href="AboutUs.html">About Us</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Help Center</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-container">
+        <p id="copyright" style="text-align:center;"></p>
+        <script>
+          document.getElementById("copyright").innerHTML =
+            `&copy; ${new Date().getFullYear()} Expense Flow . All rights reserved.`;
+        </script>
+        <div class="footer-stats">
+          <span>🏆 Trusted by 10,000+ users</span>
+          <span>💰 ₹50M+ tracked</span>
+          <span>📊 99.9% uptime</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script src="db-manager.js"></script>
@@ -1069,8 +1105,117 @@
   <script src="workspace-feature.js"></script>
   <script src="smart-triggers.js"></script>
   <script src="subscription-manager.js"></script>
+  <script src="js/folders.js"></script>
+  <script src="receipt-ocr.js"></script>
   <script src="index.js"> </script>
 
-  </body >
+  <!-- Create Folder Modal -->
+  <div id="create-folder-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Create New Folder</h3>
+        <span class="close-btn" onclick="closeCreateFolderModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Folder Name</label>
+          <input type="text" id="new-folder-name" class="form-control" placeholder="e.g. Tax 2026">
+        </div>
+        <div class="form-group">
+          <label>Color</label>
+          <input type="color" id="new-folder-color" value="#3b82f6" style="width: 100%; height: 40px; margin-top: 5px;">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeCreateFolderModal()">Cancel</button>
+        <button class="btn-submit" id="save-folder-btn">Create</button>
+      </div>
+    </div>
+  </div>
 
-</html >
+  <!-- OCR Result Modal -->
+  <div id="ocr-result-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-magic"></i> Scan Result</h3>
+        <span class="close-btn" onclick="closeOCRModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="ocr-preview">
+          <img id="ocr-preview-img" src="" alt="Receipt Preview"
+            style="max-height: 200px; display: block; margin: 0 auto;">
+          <div class="confidence-meter">
+            <div id="ocr-confidence-bar" class="progress-fill"></div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-control">
+            <label>Merchant</label>
+            <input type="text" id="ocr-merchant">
+          </div>
+          <div class="form-control">
+            <label>Date</label>
+            <input type="date" id="ocr-date">
+          </div>
+          <div class="form-control">
+            <label>Amount</label>
+            <input type="number" id="ocr-amount" step="0.01">
+          </div>
+          <div class="form-control">
+            <label>Category</label>
+            <select id="ocr-category">
+              <option value="food">Food</option>
+              <option value="transport">Transport</option>
+              <option value="shopping">Shopping</option>
+              <option value="entertainment">Entertainment</option>
+              <option value="utilities">Utilities</option>
+              <option value="healthcare">Healthcare</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label>Save to Folder</label>
+            <select id="ocr-folder" class="folder-select">
+              <option value="">Unfiled</option>
+            </select>
+          </div>
+        </div>
+        <p id="ocr-item-count" style="text-align: center; color: var(--text-secondary); margin-top: 10px;"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeOCRModal()">Discard</button>
+        <button class="btn-submit" id="ocr-save-btn">Save Expense</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OCR Itemized Modal (Simplified) -->
+  <div id="ocr-itemized-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Itemized Receipt</h3>
+        <span class="close-btn" id="close-itemized-modal">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div id="itemized-list"></div>
+        <!-- Summary -->
+        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+          <span id="itemized-selected-count">0 items selected</span>
+          <span id="itemized-selected-total">$0.00</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="save-single-btn">Save as Single</button>
+        <button class="btn-submit" id="save-itemized-btn">Save All Items</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ocr-loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Processing...</div>
+  </div>
+
+</body>
+
+</html>

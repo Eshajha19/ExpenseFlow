@@ -23,9 +23,9 @@ router.post('/scan', auth, upload, handleMulterError, async (req, res) => {
     const extractedData = await ocrService.processReceipt(req.file.buffer);
 
     if (!extractedData.success) {
-      return res.status(400).json({ 
-        error: 'Failed to process receipt', 
-        message: extractedData.message 
+      return res.status(400).json({
+        error: 'Failed to process receipt',
+        message: extractedData.message
       });
     }
 
@@ -78,9 +78,9 @@ router.post('/scan-deep', auth, upload, handleMulterError, async (req, res) => {
     const result = await ocrService.extractReceiptData(req.file.buffer);
 
     if (!result.success) {
-      return res.status(400).json({ 
-        error: 'Failed to process receipt', 
-        message: result.message 
+      return res.status(400).json({
+        error: 'Failed to process receipt',
+        message: result.message
       });
     }
 
@@ -124,7 +124,8 @@ router.post('/save-scanned', auth, async (req, res) => {
       fileUrl,
       cloudinaryId,
       originalName,
-      type = 'expense'
+      type = 'expense',
+      folderId = null
     } = req.body;
 
     // 1. Create Expense
@@ -153,6 +154,7 @@ router.post('/save-scanned', auth, async (req, res) => {
       cloudinaryId,
       fileType: 'image',
       fileSize: 0,
+      folder: folderId,
       ocrData: {
         extractedText: 'Stored from scan flow',
         extractedAmount: amount,
@@ -358,11 +360,22 @@ router.get('/expense/:expenseId', auth, async (req, res) => {
   }
 });
 
-// Get all receipts for user
+// Get all receipts for user (with optional folder filter)
 router.get('/', auth, async (req, res) => {
   try {
-    const receipts = await Receipt.find({ user: req.user._id })
+    const query = { user: req.user._id };
+    if (req.query.folderId) {
+      // If folderId is 'null' string or explicitly null, filter for unfiled
+      if (req.query.folderId === 'null') {
+        query.folder = null;
+      } else {
+        query.folder = req.query.folderId;
+      }
+    }
+
+    const receipts = await Receipt.find(query)
       .populate('expense', 'description amount category type date')
+      .populate('folder', 'name color')
       .select('-cloudinaryId')
       .sort({ createdAt: -1 });
 
@@ -416,6 +429,39 @@ router.get('/:receiptId/ocr', auth, async (req, res) => {
     res.json(receipt.ocrData);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @route   PUT /api/receipts/:id/move
+ * @desc    Move receipt to a folder
+ * @access  Private
+ */
+router.put('/:id/move', auth, async (req, res) => {
+  try {
+    const { folderId } = req.body;
+
+    // Validate folder ownership if folderId is provided
+    if (folderId) {
+      const DocumentFolder = require('../models/DocumentFolder');
+      const folder = await DocumentFolder.findOne({ _id: folderId, user: req.user._id });
+      if (!folder) {
+        return res.status(404).json({ error: 'Folder not found' });
+      }
+    }
+
+    const receipt = await Receipt.findOne({ _id: req.params.id, user: req.user._id });
+    if (!receipt) {
+      return res.status(404).json({ error: 'Receipt not found' });
+    }
+
+    receipt.folder = folderId || null;
+    await receipt.save();
+
+    res.json(receipt);
+  } catch (error) {
+    console.error('Error moving receipt:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

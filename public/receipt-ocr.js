@@ -41,7 +41,7 @@ async function handleReceiptScan(file, useDeepScan = true) {
         if (!response.ok) throw new Error(result.error || 'Failed to scan receipt');
 
         currentScanData = result.data;
-        
+
         // Check if we have multiple items for itemization
         if (useDeepScan && result.data.hasMultipleItems && result.data.items?.length > 1) {
             currentItemizedData = result.data;
@@ -72,7 +72,7 @@ function openItemizedModal(data) {
     document.getElementById('itemized-date').textContent = data.date ? new Date(data.date).toLocaleDateString() : new Date().toLocaleDateString();
     document.getElementById('itemized-total').textContent = formatCurrency(data.amount || 0);
     document.getElementById('itemized-count').textContent = `${data.items.length} items detected`;
-    
+
     // Set preview image
     const previewImg = document.getElementById('itemized-preview-img');
     if (previewImg && data.fileUrl) {
@@ -89,7 +89,7 @@ function openItemizedModal(data) {
     // Populate items list
     const itemsList = document.getElementById('itemized-list');
     itemsList.innerHTML = '';
-    
+
     data.items.forEach((item, index) => {
         const itemRow = document.createElement('div');
         itemRow.className = 'itemized-row';
@@ -131,10 +131,10 @@ function openItemizedModal(data) {
  */
 function updateItemizedTotal() {
     if (!currentItemizedData) return;
-    
+
     let total = 0;
     const checkboxes = document.querySelectorAll('#itemized-list input[type="checkbox"]:checked');
-    
+
     checkboxes.forEach(checkbox => {
         const index = checkbox.dataset.index;
         const priceInput = document.querySelector(`.item-amount[data-index="${index}"]`);
@@ -145,7 +145,7 @@ function updateItemizedTotal() {
     });
 
     document.getElementById('itemized-selected-total').textContent = formatCurrency(total);
-    
+
     const selectedCount = checkboxes.length;
     document.getElementById('itemized-selected-count').textContent = `${selectedCount} item${selectedCount !== 1 ? 's' : ''} selected`;
 }
@@ -167,14 +167,14 @@ async function saveItemizedExpenses() {
 
     const selectedItems = [];
     const checkboxes = document.querySelectorAll('#itemized-list input[type="checkbox"]:checked');
-    
+
     checkboxes.forEach(checkbox => {
         const index = parseInt(checkbox.dataset.index);
         const nameInput = document.querySelector(`.item-name[data-index="${index}"]`);
         const categorySelect = document.querySelector(`.item-category[data-index="${index}"]`);
         const qtyInput = document.querySelector(`.item-quantity[data-index="${index}"]`);
         const priceInput = document.querySelector(`.item-amount[data-index="${index}"]`);
-        
+
         selectedItems.push({
             name: nameInput?.value || currentItemizedData.items[index]?.name || 'Item',
             category: categorySelect?.value || currentItemizedData.items[index]?.category || 'other',
@@ -191,7 +191,7 @@ async function saveItemizedExpenses() {
 
     try {
         toggleOverlay(true, `Creating ${selectedItems.length} expense${selectedItems.length > 1 ? 's' : ''}...`);
-        
+
         const response = await fetch(`${RECEIPT_API_URL}/save-itemized`, {
             method: 'POST',
             headers: {
@@ -231,7 +231,7 @@ async function saveItemizedExpenses() {
  */
 async function saveAsSingleExpense() {
     if (!currentItemizedData) return;
-    
+
     // Calculate total from selected items
     let total = 0;
     const checkboxes = document.querySelectorAll('#itemized-list input[type="checkbox"]:checked');
@@ -281,7 +281,7 @@ function openOCRResultModal(data) {
     document.getElementById('ocr-amount').value = data.amount || '';
     document.getElementById('ocr-date').value = data.date ? new Date(data.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
     document.getElementById('ocr-category').value = data.category || 'other';
-    
+
     const previewImg = document.getElementById('ocr-preview-img');
     if (previewImg && data.fileUrl) {
         previewImg.src = data.fileUrl;
@@ -302,6 +302,13 @@ function openOCRResultModal(data) {
         itemCountEl.style.display = 'none';
     }
 
+    // Populate folders if available
+    if (window.initFolders && typeof window.fetchFolders === 'function') {
+        // Ensure folders are loaded and dropdowns populated
+        // This relies on folders.js being loaded
+        window.fetchFolders();
+    }
+
     modal.classList.add('active');
 }
 
@@ -319,7 +326,8 @@ async function saveScannedExpense() {
         description: `Receipt from ${document.getElementById('ocr-merchant').value}`,
         fileUrl: currentScanData.fileUrl,
         cloudinaryId: currentScanData.cloudinaryId,
-        originalName: currentScanData.originalName
+        originalName: currentScanData.originalName,
+        folderId: document.getElementById('ocr-folder')?.value || null
     };
 
     try {

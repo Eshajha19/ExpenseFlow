@@ -158,7 +158,7 @@ mongoose.connect(process.env.MONGODB_URI)
     // Initialize cron jobs after DB connection
     CronJobs.init();
     console.log('Email cron jobs initialized');
-    
+
     // Initialize backup scheduling
     // Issue #462: Automated Backup System for Financial Data
     initializeBackupScheduling();
@@ -252,6 +252,8 @@ app.use('/api/tax', require('./routes/tax'));
 app.use('/api/backups', backupRoutes); // Issue #462: Backup Management API
 app.use('/api/accounts', require('./routes/accounts'));
 app.use('/api/2fa', require('./middleware/auth'), twoFactorAuthRoutes); // Issue #503: 2FA Management
+app.use('/api/receipts', require('./routes/receipts'));
+app.use('/api/folders', require('./routes/folders'));
 
 // Import error handling middleware
 const { errorHandler, notFoundHandler } = require('./middleware/errorMiddleware');
