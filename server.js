@@ -245,6 +245,7 @@ console.log('Collaboration handler initialized');
 
 // Routes
 app.use('/api/auth', require('./middleware/rateLimiter').authLimiter, authRoutes);
+app.use('/api/expenses', expenseRoutes); // Expense management
 app.use('/api/currency', require('./routes/currency'));
 app.use('/api/groups', require('./routes/groups'));
 app.use('/api/splits', require('./routes/splits'));
