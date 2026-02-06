@@ -15,6 +15,7 @@ const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
 const cors = require('cors');
+const cron = require('node-cron');
 const socketAuth = require('./middleware/socketAuth');
 const CronJobs = require('./services/cronJobs');
 const { generalLimiter } = require('./middleware/rateLimiter');
@@ -24,6 +25,7 @@ const AuditMiddleware = require('./middleware/auditMiddleware');
 const protect = require("./middleware/authMiddleware");
 require('dotenv').config();
 
+
 const authRoutes = require('./routes/auth');
 const expenseRoutes = require('./routes/expenses');
 const syncRoutes = require('./routes/sync');
@@ -32,7 +34,9 @@ const groupsRoutes = require('./routes/groups');
 const clientRoutes = require('./routes/clients');
 const invoiceRoutes = require('./routes/invoices');
 const paymentRoutes = require('./routes/payments');
-const timeEntryRoutes = require('./routes/time-entries');
+const backupRoutes = require('./routes/backups');
+const twoFactorAuthRoutes = require('./routes/twoFactorAuth');
+
 
 const app = express();
 const server = http.createServer(app);

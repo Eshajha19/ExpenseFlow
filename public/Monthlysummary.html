@@ -14,6 +14,7 @@
   <!-- SAME CSS -->
   <link rel="stylesheet" href="expensetracker.css" />
   <link rel="stylesheet" href="Monthlysummary.css" />
+  <link rel="stylesheet" href="index.css" />
   <!-- Export libs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -28,6 +29,7 @@
 
 
 
+   <!-- Header -->
   <header class="header">
     <nav class="navbar">
       <div class="nav-container">
@@ -35,12 +37,44 @@
           <i class="fas fa-wallet"></i>
           <span>ExpenseFlow</span>
         </div>
-        <div class="nav-menu">
-          <a href="login.html" class="nav-link">Dashboard</a>
-          <a href="#analytics.html" class="nav-link">Analytics</a>
-          <a href="Monthlysummary.html" class="nav-link active">Finance Summary</a>
-          <a href="finance-tips.html" class="nav-link">Finance Tips</a>
-          <a href="#settings.html" class="nav-link">Settings</a>
+        <div class="nav-menu" id="nav-menu">
+          <a href="dashboard.html" class="nav-link ">Dashboard</a>
+          <a href="accounts.html" class="nav-link">Accounts</a>
+          <a href="analytics.html" class="nav-link ">Analytics</a>
+          <a href="goals.html" class="nav-link ">Goals</a>
+
+          <div class="nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle">More</a>
+            <div class="dropdown-menu">
+              <a href="Monthlysummary.html" class="dropdown-link active">Summary</a>
+              <a href="settings.html" class="dropdown-link">Overview</a>
+              <a href="./contributor.html" class="dropdown-link">Contributors</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="nav-toggle" id="nav-toggle">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </div>
+        <div class="user-profile">
+          <div id="workspace-selector" class="workspace-selector"></div>
+          <select id="language-switcher" class="language-select" aria-label="Language">
+            <option value="en">EN</option>
+            <option value="es">ES</option>
+            <option value="fr">FR</option>
+          </select>
+          <button class="currency-btn" onclick="openCurrencyModal()" title="Currency Settings">
+            <i class="fas fa-coins"></i>
+            <span id="current-currency">INR</span>
+          </button>
+          <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop&crop=face"
+            alt="User" class="profile-img">
+          <span class="username" id="navUsername"></span>
+          <div id="redirect">
+            <a href="#" id="logoutLink" onclick="logout()">Logout</a>
+          </div>
         </div>
       </div>
     </nav>
