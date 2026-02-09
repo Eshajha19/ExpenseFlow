@@ -1236,7 +1236,51 @@
     </div>
   </footer>
   <script src="login.js"></script>
+  <!-- Add this right before </body> -->
+<!-- Add this to all HTML files -->
+<script src="404-handler.js"></script>
 
+<!-- Also add this fallback script -->
+<script>
+    // Fallback 404 handler for file:// protocol
+    if (window.location.protocol === 'file:') {
+        console.warn('Running locally - using simplified 404 handler');
+        
+        const validPages = [
+            'index.html', 'signup.html', 'login.html', 'dashboard.html',
+            'analytics.html', 'goals.html', 'settings.html',
+            'Monthlysummary.html', 'CurrencyConverter.html',
+            'feedback.html', 'schemes.html', 'AboutUs.html',
+            'PrivacyPolicy.html', 'terms_service.html',
+            'Help-Center.html', '404.html'
+        ];
+        
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a[href]');
+            if (!link) return;
+            
+            const href = link.getAttribute('href');
+            
+            // Skip external links and anchors
+            if (href.startsWith('http') || href.startsWith('#') || 
+                href.startsWith('mailto:') || href.startsWith('tel:')) {
+                return;
+            }
+            
+            // Handle .html links
+            if (href.endsWith('.html')) {
+                e.preventDefault();
+                const filename = href.split('/').pop();
+                
+                if (validPages.includes(filename)) {
+                    window.location.href = href;
+                } else {
+                    window.location.href = '404.html';
+                }
+            }
+        });
+    }
+</script>
 </body>
 
 </html>
