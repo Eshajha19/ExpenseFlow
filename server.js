@@ -290,6 +290,10 @@ app.use('/api/folders', require('./routes/folders'));
 app.use('/api/procurement', require('./routes/procurement'));
 app.use('/api/compliance', require('./routes/compliance'));
 app.use('/api/project-billing', require('./routes/project-billing'));
+app.use('/api/profile', require('./routes/profile'));
+
+// Serve uploaded avatars
+app.use('/uploads', express.static(require('path').join(__dirname, 'uploads')));
 
 // Import error handling middleware
 const { errorHandler, notFoundHandler } = require('./middleware/errorMiddleware');
