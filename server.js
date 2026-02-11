@@ -297,7 +297,7 @@ app.use('/api/profile', require('./routes/profile'));
 // Serve uploaded avatars
 app.use('/uploads', express.static(require('path').join(__dirname, 'uploads')));
 app.use('/api/treasury', require('./routes/treasury'));
-app.use('/api/projects', require('./routes/projects'));
+app.use('/api/reconciliation', require('./routes/reconciliation'));
 
 // Import error handling middleware
 const { errorHandler, notFoundHandler } = require('./middleware/errorMiddleware');
