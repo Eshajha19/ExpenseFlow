@@ -289,7 +289,7 @@ app.use('/api/treasury', require('./routes/treasury'));
 app.use('/api/search', require('./routes/search'));
 app.use('/api/exports', require('./routes/exports'));
 app.use('/api/maps', require('./routes/maps'));
-app.use('/api/security', require('./middleware/fraudGuard'), require('./routes/security'));
+app.use('/api/sync', require('./middleware/syncInterceptor'), require('./routes/sync'));
 
 // Import error handling middleware
 const { errorHandler, notFoundHandler } = require('./middleware/errorMiddleware');
