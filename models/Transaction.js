@@ -62,6 +62,12 @@ const transactionSchema = new mongoose.Schema({
         maxlength: 50,
         default: ''
     },
+    notes: {
+        type: String,
+        trim: true,
+        maxlength: 500,
+        default: ''
+    },
     date: {
         type: Date,
         default: Date.now
@@ -185,6 +191,11 @@ const transactionSchema = new mongoose.Schema({
     isEventSourced: {
         type: Boolean,
         default: true
+    },
+    // NEW: Features for Zero-Knowledge Vault
+    encryptedFields: {
+        type: [String],
+        default: [] // List of keys that are currently encrypted: ['description', 'notes']
     }
 }, {
     timestamps: true
