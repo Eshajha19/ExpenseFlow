@@ -46,6 +46,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(require('./middleware/encryptionInterceptor'));
 app.use(require('./middleware/taxonomyEnforcer'));
+app.use(require('./middleware/consistencyGuard'));
 
 /* ================================
    DATABASE CONNECTION
@@ -70,6 +71,7 @@ async function connectDatabase() {
         require('./jobs/accessAuditor').start();
         require('./jobs/forecastRetrainer').start();
         require('./jobs/taxonomyAuditor').start();
+        require('./jobs/conflictCleaner').start();
 
 
         console.log('✓ Cron jobs initialized');
@@ -97,6 +99,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/export', require('./routes/export'));
 app.use('/api/forecasting', require('./routes/forecasting'));
 app.use('/api/taxonomy', require('./routes/taxonomy'));
+app.use('/api/sync', require('./routes/syncManager'));
 
 
 
