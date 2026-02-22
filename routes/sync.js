@@ -1,108 +1,66 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const Expense = require('../models/Expense');
-const {requireAuth,getUserId}=require('../middleware/clerkAuth');
+const syncInterceptor = require('../middleware/syncInterceptor');
+const transactionService = require('../services/transactionService');
+const consensusEngine = require('../services/consensusEngine');
+const SyncConflict = require('../models/SyncConflict');
+const ResponseFactory = require('../utils/ResponseFactory');
 
 /**
- * @route   POST /api/sync/delta
- * @desc    Sync offline changes with server
- * @access  Private
+ * Distributed Sync API (Vector Clock Enhanced)
+ * Issue #730: Handles high-integrity multi-device data synchronization.
  */
-router.post('/delta', requireAuth, async (req, res) => {
-  const { changes } = req.body; // Array of { id, version, data, action: 'create'|'update'|'delete' }
-  const userId = req.user._id;
-  const results = {
-    success: [],
-    conflicts: [],
-    errors: []
-  };
 
-  if (!Array.isArray(changes)) {
-    return res.status(400).json({ error: 'Invalid changes format' });
-  }
+/**
+ * @route   POST /api/sync/transactions/:id
+ * @desc    Sync a specific transaction with consensus reconciliation
+ */
+router.post('/transactions/:id', auth, syncInterceptor, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await transactionService.syncUpdate(id, req.body, req.syncContext);
 
-  for (const change of changes) {
-    try {
-      const { id, version, data, action, localId } = change;
-
-      if (action === 'create') {
-        const newExpense = new Expense({
-          ...data,
-          user: userId,
-          version: 1,
-          lastSyncedAt: Date.now()
-        });
-        await newExpense.save();
-        results.success.push({ localId, serverId: newExpense._id, version: newExpense.version });
-        continue;
-      }
-
-      const existing = await Expense.findOne({ _id: id, user: userId });
-
-      if (!existing) {
-        results.errors.push({ id, message: 'Expense not found' });
-        continue;
-      }
-
-      if (action === 'delete') {
-        await existing.remove();
-        results.success.push({ id, action: 'delete' });
-        continue;
-      }
-
-      // Conflict Detection
-      if (existing.version > version) {
-        // Server has a newer version
-        results.conflicts.push({
-          id,
-          serverVersion: existing.version,
-          serverData: existing,
-          message: 'Conflict detected: Server has a newer version'
-        });
-        continue;
-      }
-
-      // Update existing
-      Object.assign(existing, data);
-      existing.version = version + 1; // Increment version
-      existing.lastSyncedAt = Date.now();
-      await existing.save();
-
-      results.success.push({ id, version: existing.version });
-
-    } catch (error) {
-      console.error('[Sync] Error processing change:', error);
-      results.errors.push({ id: change.id, message: error.message });
+    if (result.status === 'synced') {
+      return ResponseFactory.success(res, result.transaction, 200, 'State synchronized');
     }
-  }
 
-  res.json(results);
+    if (result.status === 'conflict') {
+      return ResponseFactory.success(res, null, 409, 'Conflict detected. Captured in graveyard.');
+    }
+
+    return res.status(200).json({ success: true, ...result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 /**
- * @route   GET /api/sync/pull
- * @desc    Pull changes from server since last sync
- * @access  Private
+ * @route   GET /api/sync/conflicts
+ * @desc    List all captured conflicts for the user
  */
-router.get('/pull', requireAuth, async (req, res) => {
-  const { lastSyncTime } = req.query;
-  const userId = req.user._id;
+router.get('/conflicts', auth, async (req, res) => {
+  const conflicts = await SyncConflict.find({
+    userId: req.user._id,
+    status: 'open'
+  }).sort({ createdAt: -1 });
 
+  res.json({ success: true, count: conflicts.length, conflicts });
+});
+
+/**
+ * @route   POST /api/sync/conflicts/:id/resolve
+ * @desc    Resolve a conflict using a specific strategy
+ */
+router.post('/conflicts/:id/resolve', auth, async (req, res) => {
   try {
-    const query = { user: userId };
-    if (lastSyncTime) {
-      query.lastSyncedAt = { $gt: new Date(lastSyncTime) };
-    }
+    const { id } = req.params;
+    const { strategy, resolvedData } = req.body;
 
-    const changes = await Expense.find(query);
-    res.json({
-      success: true,
-      changes,
-      serverTime: new Date()
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to pull changes' });
+    const result = await consensusEngine.resolveConflict(id, strategy, resolvedData);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

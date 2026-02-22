@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const auditPlugin = require('../plugins/mongooseAuditV2');
 
 const transactionSchema = new mongoose.Schema({
     user: {
@@ -47,9 +48,10 @@ const transactionSchema = new mongoose.Schema({
         min: 0
     },
     category: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Taxonomy',
         required: true,
-        enum: ['food', 'transport', 'entertainment', 'utilities', 'healthcare', 'shopping', 'other', 'salary', 'freelance', 'investment', 'transfer']
+        index: true
     },
     type: {
         type: String,
@@ -60,6 +62,12 @@ const transactionSchema = new mongoose.Schema({
         type: String,
         trim: true,
         maxlength: 50,
+        default: ''
+    },
+    notes: {
+        type: String,
+        trim: true,
+        maxlength: 500,
         default: ''
     },
     date: {
@@ -106,10 +114,110 @@ const transactionSchema = new mongoose.Schema({
         billedAt: Date,
         invoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProjectInvoice' },
         markupOverride: Number
+    },
+    // New fields for Historical Currency Revaluation Engine Overhaul
+    forexMetadata: {
+        rateAtTransaction: { type: Number },
+        rateSource: { type: String, default: 'manual' },
+        lastRevaluedAt: { type: Date },
+        isHistoricallyAccurate: { type: Boolean, default: false },
+        historicalProvider: { type: String }
+    },
+    revaluationHistory: [{
+        revaluedAt: { type: Date, default: Date.now },
+        oldRate: Number,
+        newRate: Number,
+        oldConvertedAmount: Number,
+        newConvertedAmount: Number,
+        baseCurrency: String,
+        reason: String
+    }],
+    status: {
+        type: String,
+        enum: ['pending', 'processing', 'validated', 'archived', 'failed'],
+        default: 'pending'
+    },
+    processingLogs: [{
+        step: String,
+        status: String,
+        timestamp: { type: Date, default: Date.now },
+        message: String,
+        details: mongoose.Schema.Types.Mixed
+    }],
+    // New fields for Smart Location Intelligence
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number], // [longitude, latitude]
+            default: [0, 0]
+        }
+    },
+    formattedAddress: {
+        type: String,
+        trim: true
+    },
+    locationSource: {
+        type: String,
+        enum: ['manual', 'geocoded', 'inferred', 'none'],
+        default: 'none'
+    },
+    place: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Place'
+    },
+    // New fields for Differential Data Synchronization
+    vectorClock: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
+    syncMetadata: {
+        lastDeviceId: String,
+        lastModifiedByDevice: String,
+        checksum: String,
+        isDeleted: { type: Boolean, default: false },
+        deletedAt: Date,
+        syncStatus: { type: String, enum: ['synced', 'pending', 'conflict'], default: 'synced' },
+        conflictsCount: { type: Number, default: 0 }
+    },
+    // NEW: Features for Event Sourcing
+    lastEventId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'FinancialEvent'
+    },
+    isEventSourced: {
+        type: Boolean,
+        default: true
+    },
+    // NEW: Features for Zero-Knowledge Vault
+    encryptedFields: {
+        type: [String],
+        default: [] // List of keys that are currently encrypted: ['description', 'notes']
+    },
+    // NEW: Features for Multi-Stage Validation
+    validationMetadata: {
+        purityScore: { type: Number, default: 100 },
+        validationId: String, // requestId from the pipeline
+        remediatedAt: Date
+    },
+    // NEW: Features for Semantic Indexing & Multi-Faceted Search
+    searchMetadata: {
+        tags: [{ type: String }],
+        merchantSentiment: { type: String, enum: ['positive', 'neutral', 'negative'], default: 'neutral' },
+        businessType: String,
+        isRecurringInferred: { type: Boolean, default: false },
+        indexedAt: Date
     }
 }, {
     timestamps: true
 });
+
+// Register Audit Plugin
+transactionSchema.plugin(auditPlugin, { modelName: 'Transaction' });
 
 // Middleware to increment version on save
 transactionSchema.pre('save', function (next) {
@@ -124,13 +232,21 @@ transactionSchema.pre('save', function (next) {
     next();
 });
 
+// Method to log processing steps
+transactionSchema.methods.logStep = async function (step, status, message, details = {}) {
+    this.processingLogs.push({ step, status, message, details });
+    if (status === 'failed') this.status = 'failed';
+    return this.save();
+};
+
 // Indexes for performance optimization
+transactionSchema.index({ description: 'text', merchant: 'text' }); // Text search
 transactionSchema.index({ user: 1, date: -1 });
 transactionSchema.index({ workspace: 1, date: -1 });
-transactionSchema.index({ user: 1, type: 1, date: -1 });
-transactionSchema.index({ workspace: 1, type: 1, date: -1 });
+transactionSchema.index({ user: 1, amount: 1 }); // Range queries optimization
 transactionSchema.index({ user: 1, category: 1, date: -1 });
 transactionSchema.index({ workspace: 1, category: 1, date: -1 });
+transactionSchema.index({ location: '2dsphere' });
 transactionSchema.index({ receiptId: 1 });
 transactionSchema.index({ source: 1, user: 1 });
 

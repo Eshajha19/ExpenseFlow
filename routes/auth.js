@@ -7,10 +7,14 @@ const AuditLog = require('../models/AuditLog');
 const emailService = require('../services/emailService');
 const securityMonitor = require('../services/securityMonitor');
 const SecurityService = require('../services/securityService');
+const authService = require('../services/authService');
 const DeviceFingerprint = require('../models/DeviceFingerprint');
 const { captureDeviceFingerprint, generateFingerprint } = require('../middleware/deviceFingerprint');
 const auth = require('../middleware/auth');
 const { AuthSchemas, validateRequest } = require('../middleware/inputValidator');
+const AppEventBus = require('../utils/AppEventBus');
+const EVENTS = require('../config/eventRegistry');
+
 const {
   loginLimiter,
   registerLimiter,
@@ -38,16 +42,11 @@ router.post('/register', registerLimiter, validateRequest(AuthSchemas.register),
   const user = new User(req.body);
   await user.save();
 
-  // Generate JWT with unique ID for session tracking
-  const jwtId = crypto.randomBytes(16).toString('hex');
-  const token = jwt.sign(
-    { id: user._id, jti: jwtId },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE || '24h' }
-  );
+  // Use centralized AuthService
+  const { token, jwtId } = authService.generateToken(user);
 
   // Create session
-  await Session.createSession(user._id, jwtId, req, {
+  await authService.createSession(user, jwtId, req, {
     loginMethod: 'password',
     rememberMe: false
   });
@@ -58,10 +57,9 @@ router.post('/register', registerLimiter, validateRequest(AuthSchemas.register),
     status: 'success'
   });
 
-  // Send welcome email (non-blocking)
-  emailService.sendWelcomeEmail(user).catch(err =>
-    console.error('Welcome email failed:', err)
-  );
+  // Decoupled Event Trigger - Replaces direct emailService call
+  AppEventBus.publish(EVENTS.USER.REGISTERED, user);
+
 
   // Capture Device Fingerprint
   try {
@@ -593,9 +591,9 @@ router.post('/security/change-password', auth, async (req, res) => {
       // Don't fail password change if alerting fails
     }
 
-    res.json({ 
-      success: true, 
-      message: 'Password changed successfully. Other sessions have been logged out.' 
+    res.json({
+      success: true,
+      message: 'Password changed successfully. Other sessions have been logged out.'
     });
   } catch (error) {
     console.error('Change password error:', error);
